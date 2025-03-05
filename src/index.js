@@ -4,7 +4,11 @@ let mit = new markdownit();
 
 export function markdownToCanvas(markdown, canvas, options) {
 
-    const context = canvas.getContext("2d");
+    const renderCanvas = document.createElement("canvas");
+    const renderContext = renderCanvas.getContext("2d");
+
+    renderCanvas.height = canvas.height;
+    renderCanvas.width = canvas.width;
 
     const order = {
         useBreaks: options.useBreaks || true,
@@ -17,13 +21,16 @@ export function markdownToCanvas(markdown, canvas, options) {
         curY: 0,
         curText: markdown,
         scale: options.scale || 1,
-        context: canvas.getContext("2d"),
-        canvas: canvas
+        context: renderContext,
+        canvas: renderCanvas,
+        margin: options.margin || 0
     };
 
-    order.curY = order.curSize * order.scale;
+    order.margin = order.margin * order.scale;
+    order.curY = (order.curSize * order.scale) + order.margin;
+    order.curX = order.margin;
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    
 
     const instructions = mit.parse(markdown, {});
 
@@ -34,6 +41,21 @@ export function markdownToCanvas(markdown, canvas, options) {
         const inst = instructions[i];
         renderInstruction(order, inst);
     }
+
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    let dy = 0;
+
+    if(options.verticalAlign == "center") {
+        dy = (canvas.height - renderCanvas.height) / 2;
+    }
+
+    if(options.verticalAlign == "bottom") {
+        dy = canvas.height - renderCanvas.height;
+    }
+
+    context.drawImage(renderCanvas, 0, dy);
 }
 
 function renderInstruction(instance, instruction) {
@@ -51,9 +73,11 @@ function renderInstruction(instance, instruction) {
     const canvas = instance.canvas;
     const context = instance.context;
 
+    const renderWidth = Math.floor(canvas.width - (instance.margin * 2));
+
     if(instruction.type) {
         if(instruction.type == "heading_open") {
-            instance.curX = 0;
+            instance.curX = instance.margin;
 
             
             instance.curSize = instance.baseSize;
@@ -88,7 +112,7 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "heading_close") {
             instance.curY += lineHeight;
-            instance.curX = 0;
+            instance.curX = instance.margin;
             instance.curSize = instance.baseSize;
             instance.curWeight = "normal";
             return;
@@ -97,7 +121,7 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "paragraph_close") {
             instance.curY += lineHeight * 2;
-            instance.curX = 0;
+            instance.curX = instance.margin;
             return;
         }
 
@@ -106,19 +130,19 @@ function renderInstruction(instance, instruction) {
             context.lineWidth = instance.scale;
 
             context.beginPath();
-            context.moveTo(0, instance.curY - (instance.scale * 12));
-            context.lineTo(canvas.width, instance.curY - (instance.scale * 12));
+            context.moveTo(instance.margin, instance.curY - (instance.scale * 12));
+            context.lineTo(renderWidth, instance.curY - (instance.scale * 12));
             context.stroke();
 
             instance.curY += instance.scale * 12;
-            instance.curX = 0;
+            instance.curX = instance.margin;
             return;
         }
 
         if(instruction.type == "softbreak") {
             if(instance.useBreaks) {
                 instance.curY += lineHeight;
-                instance.curX = 0;
+                instance.curX = instance.margin;
             }
             
             return;
@@ -126,7 +150,7 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "hardbreak") {
             instance.curY += lineHeight;
-            instance.curX = 0;
+            instance.curX = instance.margin;
             
             return;
         }
@@ -158,7 +182,7 @@ function renderInstruction(instance, instruction) {
         ital = "italic ";
     }
 
-    context.font = ital + instance.curWeight + " " + (instance.curSize * instance.scale) + "px " + instance.curFace;
+    context.font = ital + instance.curWeight + " " + (instance.curSize * instance.scale) + "px " + instance.curFont;
 
     if(instruction.content && instruction.content.trim().length > 0) {
 
@@ -173,12 +197,10 @@ function renderInstruction(instance, instruction) {
 
             const metrics = context.measureText(word);
 
-            if(instance.curX + metrics.width > canvas.width) {
-                instance.curX = 0;
+            if(instance.curX + metrics.width > renderWidth) {
+                instance.curX = instance.margin;
                 instance.curY += lineHeight;
             }
-
-            
 
             context.fillText(word, instance.curX, instance.curY);
 
