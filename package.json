@@ -1,0 +1,38 @@
+{
+    "name": "markdowncanvas",
+    "version": "1.0.0",
+    "description": "Render markdown to an html canvas element",
+    "scripts": {
+        "build": "webpack --config webpack.common.cjs"
+    },
+    "keywords": ["canvas", "library", "ape apps", "module", "markdowncanvas"],
+    "homepage": "https://www.ape-apps.com",
+    "bugs": {
+        "email": "support@ape-apps.com"
+    },
+    "author": {
+        "name": "Ape Apps",
+        "email": "support@ape-apps.com",
+        "url": "https://www.ape-apps.com"
+    },
+    "funding": {
+        "type": "patreon",
+        "url": "https://www.patreon.com/apeapps"
+    },
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bastecklein/markdowncanvas"
+    },
+    "main": "src/index.js",
+    "config": {},
+    "dependencies": {
+        "markdown-it": "*"
+    },
+    "devDependencies": {
+        "webpack": "*",
+        "webpack-cli": "*"
+    },
+    "private": false,
+    "type": "module"
+}
