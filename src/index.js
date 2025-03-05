@@ -48,11 +48,11 @@ export function markdownToCanvas(markdown, canvas, options) {
     let dy = 0;
 
     if(options.verticalAlign == "center") {
-        dy = (canvas.height - renderCanvas.height) / 2;
+        dy = (canvas.height - order.curY) / 2;
     }
 
     if(options.verticalAlign == "bottom") {
-        dy = canvas.height - renderCanvas.height;
+        dy = (canvas.height - order.curY) - order.margin;
     }
 
     context.drawImage(renderCanvas, 0, dy);
