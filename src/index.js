@@ -36,7 +36,8 @@ export function markdownToCanvas(markdown, canvas, options) {
             left: options.margin || 0,
             right: options.margin || 0
         },
-        inBlockquote: false
+        inBlockquote: false,
+        isHeading: false
     };
 
     order.curMargin.left = order.curMargin.left * order.scale;
@@ -63,9 +64,11 @@ export function markdownToCanvas(markdown, canvas, options) {
     if(options.backgroundColor && options.backgroundColor.trim().length == 7) {
         context.fillStyle = options.backgroundColor;
         context.fillRect(0, 0, canvas.width, canvas.height);
+    } else {
+        context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    
 
     let bgImg = null;
 
@@ -84,6 +87,8 @@ export function markdownToCanvas(markdown, canvas, options) {
     }
 
     if(bgImg) {
+
+        console.log(bgImg);
 
         if(bgImg.width == canvas.width && bgImg.h == canvas.height) {
             context.drawImage(bgImg, 0, 0);
@@ -140,8 +145,17 @@ function renderInstruction(instance, instruction) {
         fillColor = instance.textColor;
     }
 
+    if(instance.isHeading) {
+        if(instance.headerColor && instance.headerColor.trim().length == 7) {
+            fillColor = instance.headerColor;
+        }
+    }
+
     if(instruction.type) {
         if(instruction.type == "heading_open") {
+
+            instance.isHeading = true;
+
             instance.curX = instance.margin;
 
             
@@ -151,42 +165,22 @@ function renderInstruction(instance, instruction) {
             if(instruction.tag) {
                 if(instruction.tag == "h1") {
                     instance.curSize = Math.round(instance.baseSize * 2.5);
-
-                    if(instance.headerColor && instance.headerColor.trim().length == 7) {
-                        fillColor = instance.headerColor;
-                    }
                 }
 
                 if(instruction.tag == "h2") {
                     instance.curSize = Math.round(instance.baseSize * 2.0);
-
-                    if(instance.headerColor && instance.headerColor.trim().length == 7) {
-                        fillColor = instance.headerColor;
-                    }
                 }
 
                 if(instruction.tag == "h3") {
                     instance.curSize = Math.round(instance.baseSize * 1.5);
-
-                    if(instance.headerColor && instance.headerColor.trim().length == 7) {
-                        fillColor = instance.headerColor;
-                    }
                 }
 
                 if(instruction.tag == "h4") {
                     instance.curSize = Math.round(instance.baseSize * 1.25);
-
-                    if(instance.headerColor && instance.headerColor.trim().length == 7) {
-                        fillColor = instance.headerColor;
-                    }
                 }
 
                 if(instruction.tag == "h5") {
                     instance.curSize = Math.round(instance.baseSize * 1.0);
-
-                    if(instance.headerColor && instance.headerColor.trim().length == 7) {
-                        fillColor = instance.headerColor;
-                    }
                 }
             }
 
@@ -200,6 +194,7 @@ function renderInstruction(instance, instruction) {
             instance.curX = instance.margin;
             instance.curSize = instance.baseSize;
             instance.curWeight = "normal";
+            instance.isHeading = false;
             return;
         }
 
@@ -278,7 +273,7 @@ function renderInstruction(instance, instruction) {
         }
 
         if(instruction.type == "blockquote_close") {
-            instance.inBlockquote = true;
+            instance.inBlockquote = false;
             return;
         }
     }
@@ -311,15 +306,17 @@ function renderInstruction(instance, instruction) {
                 instance.curY += lineHeight;
             }
 
-            if(instance.inBlockquote) {
+            if(instance.inBlockquote && instance.curX == instance.curMargin.left) {
                 context.fillStyle = "rgba(130, 130, 130, 0.15)";
                 context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), lineHeight);
 
                 context.fillStyle = "rgba(130, 130, 130, 0.25)";
                 context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), lineHeight);
                 
-                context.fillStyle = fillColor;
+                instance.curX += Math.round(canvas.width * 0.015);
             }
+
+            context.fillStyle = fillColor;
 
             context.fillText(word, instance.curX, instance.curY);
 
