@@ -128,8 +128,6 @@ function renderInstruction(instance, instruction) {
         return;
     }
 
-    instance.lastY = instance.curY;
-
     const lineHeight = (instance.curSize + 2) * instance.scale;
 
     const canvas = instance.canvas;
@@ -182,12 +180,14 @@ function renderInstruction(instance, instruction) {
                 }
             }
 
+            instance.lastY = instance.curY;
             instance.curY += lineHeight;
 
             return;
         }
 
         if(instruction.type == "heading_close") {
+            instance.lastY = instance.curY;
             instance.curY += lineHeight;
             instance.curX = instance.margin;
             instance.curSize = instance.baseSize;
@@ -198,6 +198,7 @@ function renderInstruction(instance, instruction) {
 
 
         if(instruction.type == "paragraph_close") {
+            instance.lastY = instance.curY;
             instance.curY += lineHeight * 2;
             instance.curX = instance.margin;
             return;
@@ -217,6 +218,7 @@ function renderInstruction(instance, instruction) {
             context.lineTo(renderWidth, yPos);
             context.stroke();
 
+            instance.lastY = instance.curY;
             instance.curY = yPos + halfDiff;
             instance.curX = instance.margin;
             return;
@@ -224,6 +226,7 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "softbreak") {
             if(instance.useBreaks) {
+                instance.lastY = instance.curY;
                 instance.curY += lineHeight;
                 instance.curX = instance.margin;
             }
@@ -232,6 +235,7 @@ function renderInstruction(instance, instruction) {
         }
 
         if(instruction.type == "hardbreak") {
+            instance.lastY = instance.curY;
             instance.curY += lineHeight;
             instance.curX = instance.margin;
             
@@ -267,6 +271,7 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "list_item_close") {
             instance.curMargin.left = instance.scale * instance.margin;
+            instance.curX = instance.margin;
             return;
         }
 
@@ -279,8 +284,9 @@ function renderInstruction(instance, instruction) {
             context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
 
             context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.045), quotePadding);
+            context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), quotePadding);
 
+            instance.lastY = instance.curY;
             instance.curY += quotePadding;
 
             return;
@@ -289,15 +295,17 @@ function renderInstruction(instance, instruction) {
         if(instruction.type == "blockquote_close") {
             instance.inBlockquote = false;
 
-            const quotePadding = Math.round(lineHeight / 2);
+            const quotePadding = Math.round(lineHeight * 0.75);
 
             context.fillStyle = "rgba(130, 130, 130, 0.15)";
             context.fillRect(instance.curX, instance.curY - (lineHeight * 2), canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
 
             context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            context.fillRect(instance.curX, instance.curY - (lineHeight * 2), Math.round(canvas.width * 0.045), quotePadding);
+            context.fillRect(instance.curX, instance.curY - (lineHeight * 2), Math.round(canvas.width * 0.015), quotePadding);
 
+            instance.lastY = instance.curY;
             instance.curY += quotePadding;
+            instance.curX = instance.margin;
 
             return;
         }
@@ -328,6 +336,7 @@ function renderInstruction(instance, instruction) {
 
             if(instance.curX + metrics.width > renderWidth) {
                 instance.curX = instance.curMargin.left;
+                instance.lastY = instance.curY;
                 instance.curY += lineHeight;
             }
 
@@ -337,9 +346,9 @@ function renderInstruction(instance, instruction) {
                 context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), lineHeight);
 
                 context.fillStyle = "rgba(130, 130, 130, 0.25)";
-                context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.045), lineHeight);
+                context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), lineHeight);
                 
-                instance.curX += Math.round(canvas.width * 0.015);
+                instance.curX += Math.round(canvas.width * 0.045);
             }
 
             context.fillStyle = fillColor;
