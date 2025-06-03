@@ -211,7 +211,7 @@ function renderInstruction(instance, instruction) {
             const yDiff = instance.curY - instance.lastY;
             const halfDiff = Math.floor(yDiff / 2);
 
-            let yPos = Math.floor(instance.lastY - halfDiff);
+            let yPos = Math.floor(instance.lastY + halfDiff);
 
             context.beginPath();
             context.moveTo(instance.margin, yPos);
@@ -270,12 +270,14 @@ function renderInstruction(instance, instruction) {
         }
 
         if(instruction.type == "list_item_close") {
-            instance.curMargin.left = instance.scale * instance.margin;
+            instance.curMargin.left = instance.margin;
             instance.curX = instance.margin;
             return;
         }
 
         if(instruction.type == "blockquote_open") {
+            instance.curX = instance.margin;
+
             instance.inBlockquote = true;
 
             const quotePadding = Math.round(lineHeight / 2);
