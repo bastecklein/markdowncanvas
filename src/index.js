@@ -37,7 +37,8 @@ export function markdownToCanvas(markdown, canvas, options) {
             right: options.margin || 0
         },
         inBlockquote: false,
-        isHeading: false
+        isHeading: false,
+        lastY: 0
     };
 
     order.curMargin.left = order.curMargin.left * order.scale;
@@ -68,8 +69,6 @@ export function markdownToCanvas(markdown, canvas, options) {
         context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    
-
     let bgImg = null;
 
     if(options.backgroundImage) {
@@ -87,9 +86,6 @@ export function markdownToCanvas(markdown, canvas, options) {
     }
 
     if(bgImg) {
-
-        console.log(bgImg);
-
         if(bgImg.width == canvas.width && bgImg.h == canvas.height) {
             context.drawImage(bgImg, 0, 0);
         } else {
@@ -112,14 +108,14 @@ export function markdownToCanvas(markdown, canvas, options) {
     let dy = 0;
 
     if(options.verticalAlign == "center") {
-        dy = (canvas.height - order.curY) / 2;
+        dy = ((canvas.height - order.curY) / 2) - (order.margin / 2);
     }
 
     if(options.verticalAlign == "bottom") {
         dy = (canvas.height - order.curY) - order.margin;
     }
 
-    context.drawImage(renderCanvas, 0, dy);
+    context.drawImage(renderCanvas, 0, Math.floor(dy));
 }
 
 function renderInstruction(instance, instruction) {
@@ -131,6 +127,8 @@ function renderInstruction(instance, instruction) {
 
         return;
     }
+
+    instance.lastY = instance.curY;
 
     const lineHeight = (instance.curSize + 2) * instance.scale;
 
@@ -209,12 +207,17 @@ function renderInstruction(instance, instruction) {
 
             context.lineWidth = instance.scale;
 
+            const yDiff = instance.curY - instance.lastY;
+            const halfDiff = Math.floor(yDiff / 2);
+
+            let yPos = Math.floor(instance.lastY + halfDiff);
+
             context.beginPath();
-            context.moveTo(instance.margin, instance.curY - (instance.scale * 12));
-            context.lineTo(renderWidth, instance.curY - (instance.scale * 12));
+            context.moveTo(instance.margin, yPos);
+            context.lineTo(renderWidth, yPos);
             context.stroke();
 
-            instance.curY += instance.scale * 12;
+            instance.curY = yPos + halfDiff;
             instance.curX = instance.margin;
             return;
         }
@@ -274,6 +277,17 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "blockquote_close") {
             instance.inBlockquote = false;
+
+            const quotePadding = Math.round(lineHeight / 2);
+
+            context.fillStyle = "rgba(130, 130, 130, 0.15)";
+            context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
+
+            context.fillStyle = "rgba(130, 130, 130, 0.25)";
+            context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.045), lineHeight);
+
+            instance.curY += quotePadding;
+
             return;
         }
     }
@@ -307,12 +321,16 @@ function renderInstruction(instance, instruction) {
             }
 
             if(instance.inBlockquote && instance.curX == instance.curMargin.left) {
+
+                const quotePadding = Math.round(lineHeight / 2);
+
                 context.fillStyle = "rgba(130, 130, 130, 0.15)";
-                context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), lineHeight);
+                context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), lineHeight + quotePadding);
 
                 context.fillStyle = "rgba(130, 130, 130, 0.25)";
-                context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), lineHeight);
+                context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.045), lineHeight);
                 
+                instance.curY += quotePadding;
                 instance.curX += Math.round(canvas.width * 0.015);
             }
 
