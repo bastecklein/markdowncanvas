@@ -202,6 +202,9 @@ function renderInstruction(instance, instruction) {
             instance.curSize = instance.baseSize;
             instance.curWeight = "normal";
             instance.isHeading = false;
+
+            notifyLineHeight(instance, instance.lastLineHeight + Math.round(12 * instance.scale));
+
             return;
         }
 
@@ -213,32 +216,40 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "hr") {
 
-            context.lineWidth = instance.scale;
+            let lineColor = null;
 
-            /*
-            const yDiff = instance.curY - instance.lastY;
-            const halfDiff = Math.floor(yDiff / 2);*/
+            if(instance.textColor && instance.textColor.trim().length == 7) {
+                lineColor = instance.textColor;
+            }
 
-            let yPos = Math.floor(instance.lastY);
+            if(lineColor && lineColor.trim().length == 7) {
+                context.strokeStyle = lineColor;
+            }
+
+            context.lineWidth = instance.scale * 1.5;
+
+            const yPos = Math.floor(instance.lastY);
 
             context.beginPath();
             context.moveTo(instance.margin, yPos);
             context.lineTo(renderWidth, yPos);
             context.stroke();
+
+            notifyLineHeight(instance, instance.lastLineHeight + Math.round(8 * instance.scale));
+
             return;
         }
 
         if(instruction.type == "softbreak") {
             if(instance.useBreaks) {
-                notifyLineHeight(instance, lineHeight);
+                conductNewLine(instance);
             }
             
             return;
         }
 
         if(instruction.type == "hardbreak") {
-            notifyLineHeight(instance, lineHeight);
-            
+            conductNewLine(instance);
             return;
         }
 
@@ -281,40 +292,18 @@ function renderInstruction(instance, instruction) {
             instance.inBlockquote = true;
 
             const quotePadding = Math.round(lineHeight / 2);
-
-            /*
-            context.fillStyle = "rgba(130, 130, 130, 0.15)";
-            context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
-
-            context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), quotePadding);*/
-
-            //instance.lastY = instance.curY;
-            //instance.curY += quotePadding;
+            
 
             notifyLineHeight(instance, quotePadding);
+
+            conductNewLine(instance);
 
             return;
         }
 
         if(instruction.type == "blockquote_close") {
-            
 
             const quotePadding = Math.round(lineHeight * 0.75);
-
-            /*
-            const quotePadding = Math.round(lineHeight * 0.75);
-
-            context.fillStyle = "rgba(130, 130, 130, 0.15)";
-            context.fillRect(instance.curX, instance.lastY, canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
-
-            context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            context.fillRect(instance.curX, instance.lastY, Math.round(canvas.width * 0.015), quotePadding);*/
-
-            /*
-            instance.lastY = instance.curY;
-            instance.curY += quotePadding;
-            instance.curX = instance.margin;*/
 
             notifyLineHeight(instance, quotePadding);
 
@@ -421,16 +410,6 @@ function renderInstruction(instance, instruction) {
             notifyLineHeight(instance, lineHeight);
 
             if(instance.inBlockquote && instance.curX == instance.curMargin.left) {
-
-                /*
-                context.fillStyle = "rgba(130, 130, 130, 0.15)";
-                context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), lineHeight);
-
-                context.fillStyle = "rgba(130, 130, 130, 0.25)";
-                context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), lineHeight);
-                */
-
-
                 instance.curX += Math.round(canvas.width * 0.045);
             }
 
@@ -469,9 +448,7 @@ function conductNewLine(instance) {
     instance.lastY = instance.curY;
     instance.curY += instance.lastLineHeight;
     instance.curX = instance.curMargin.left;
-    instance.lastLineHeight = 0;
-
-    
+    instance.lastLineHeight = 0; 
 }
 
 export function wrapText(ctx, text, maxWidth) {
