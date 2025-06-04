@@ -295,7 +295,7 @@ function renderInstruction(instance, instruction) {
             const indentSize = Math.round(20 * instance.scale);
             instance.curIndent = (indentSize - 1) * instruction.level;
 
-            context.fillText("•", instance.curIndent, instance.curY);
+            context.fillText("•", instance.curIndent - indentSize, instance.curY);
             instance.curX = instance.curIndent + indentSize;
             
             return;
