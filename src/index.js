@@ -369,9 +369,12 @@ function renderInstruction(instance, instruction) {
     let useFont = instance.curFont;
     instance.isCode = false;
 
+    let fenceBlock = false;
+
     if(instruction.type == "fence" && instruction.tag == "code") {
         instance.isCode = true;
         useFont = "monospace";
+        fenceBlock = true;
     }
 
 
@@ -387,38 +390,50 @@ function renderInstruction(instance, instruction) {
 
     if(instruction.content && instruction.content.trim().length > 0) {
 
-        const words = instruction.content.split(" ");
+        const lines = instruction.content.split("\n");
 
-        for(let i = 0; i < words.length; i++) {
-            let word = words[i];
+        for(let j = 0; j < lines.length; j++) {
+            const line = lines[j];
 
-            if(i < words.length - 1) {
-                word += " ";
-            }
+            const words = line.split(" ");
 
-            const metrics = context.measureText(word);
+            for(let i = 0; i < words.length; i++) {
+                let word = words[i];
 
-            if(instance.curX + metrics.width > renderWidth) {
-                conductNewLine(instance);
-            }
+                if(i < words.length - 1) {
+                    word += " ";
+                }
 
-            if(word && word.trim().length > 0) {
-                notifyLineHeight(instance, lineHeight);
-            }
+                const metrics = context.measureText(word);
+
+                if(instance.curX + metrics.width > renderWidth) {
+                    conductNewLine(instance);
+                }
+
+                if(word && word.trim().length > 0) {
+                    notifyLineHeight(instance, lineHeight);
+                }
             
 
-            if(instance.inBlockquote && instance.curX == 0) {
-                instance.curX += Math.round(canvas.width * 0.045);
+                if(instance.inBlockquote && instance.curX == 0) {
+                    instance.curX += Math.round(canvas.width * 0.045);
+                }
+
+                context.fillStyle = fillColor;
+
+                context.textBaseline = "top";
+
+                context.fillText(word, instance.curX, instance.curY);
+
+                instance.curX += metrics.width;
+
+                if(fenceBlock) {
+                    conductNewLine(instance);
+                }
             }
-
-            context.fillStyle = fillColor;
-
-            context.textBaseline = "top";
-
-            context.fillText(word, instance.curX, instance.curY);
-
-            instance.curX += metrics.width;
         }
+
+        
     }
 }
 
