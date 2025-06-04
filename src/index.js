@@ -375,6 +375,9 @@ function renderInstruction(instance, instruction) {
         instance.isCode = true;
         useFont = "monospace";
         fenceBlock = true;
+
+        instance.lastLineHeight = Math.round(8 * instance.scale);
+        conductNewLine(instance);
     }
 
 
@@ -410,7 +413,7 @@ function renderInstruction(instance, instruction) {
                     conductNewLine(instance);
                 }
 
-                if(word && word.trim().length > 0) {
+                if(word && (word.trim().length > 0 || fenceBlock)) {
                     notifyLineHeight(instance, lineHeight);
                 }
             
@@ -426,13 +429,16 @@ function renderInstruction(instance, instruction) {
                 context.fillText(word, instance.curX, instance.curY);
 
                 instance.curX += metrics.width;
-
-                
             }
 
             if(fenceBlock) {
                 conductNewLine(instance);
             }
+        }
+
+        if(fenceBlock) {
+            instance.lastLineHeight = Math.round(8 * instance.scale);
+            conductNewLine(instance);
         }
 
         
