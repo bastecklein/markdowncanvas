@@ -156,6 +156,11 @@ function renderInstruction(instance, instruction) {
         }
     }
 
+    console.log("--- START NEW INSTRUCTION ---");
+    console.log(instruction);
+    console.log(JSON.parse(JSON.stringify(instance)));
+    
+
     if(instruction.block) {
         conductNewLine(instance);
     }
@@ -409,6 +414,7 @@ function notifyLineHeight(instance, height) {
 
 function conductNewLine(instance) {
     
+    console.log("Conducting new line");
     
     if(instance.lastLineHeight > 0) {
         if(instance.inBlockquote) {
