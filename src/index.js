@@ -59,7 +59,8 @@ export function markdownToCanvas(markdown, canvas, options) {
         lastLineHeight: 0,
         textAlign: options.textAlign || "left",
         maxImageHeight: options.maxImageHeight || 512,
-        curIndent: 0
+        curIndent: 0,
+        isCode: false
     };
 
     order.curMargin.left = order.curMargin.left * order.scale;
@@ -292,11 +293,11 @@ function renderInstruction(instance, instruction) {
 
             context.textBaseline = "top";
 
-            const indentSize = Math.round(20 * instance.scale);
+            const indentSize = Math.round(24 * instance.scale);
             instance.curIndent = (indentSize - 1) * instruction.level;
 
             context.fillText("•", instance.curIndent - indentSize, instance.curY);
-            instance.curX = instance.curIndent + indentSize;
+            instance.curX = instance.curIndent;
             
             return;
         }
@@ -365,6 +366,14 @@ function renderInstruction(instance, instruction) {
         return;
     }
 
+    let useFont = instance.curFont;
+    instance.isCode = false;
+
+    if(instruction.type == "fence" && instruction.tag == "code") {
+        instance.isCode = true;
+        useFont = "monospace";
+    }
+
 
     context.fillStyle = fillColor;
 
@@ -374,7 +383,7 @@ function renderInstruction(instance, instruction) {
         ital = "italic ";
     }
 
-    context.font = ital + instance.curWeight + " " + (instance.curSize * instance.scale) + "px " + instance.curFont;
+    context.font = ital + instance.curWeight + " " + (instance.curSize * instance.scale) + "px " + useFont;
 
     if(instruction.content && instruction.content.trim().length > 0) {
 
@@ -429,11 +438,16 @@ function conductNewLine(instance) {
             instance.context.fillStyle = "rgba(130, 130, 130, 0.25)";
             instance.context.fillRect(instance.curMargin.left, instance.curY, Math.round(instance.canvas.width * 0.015), instance.lastLineHeight);
         }
+
+        if(instance.isCode) {
+            instance.context.fillStyle = "rgba(130, 130, 130, 0.05)";
+            instance.context.fillRect(instance.curMargin.left, instance.curY, instance.canvas.width - (instance.curMargin.left + instance.curMargin.right), instance.lastLineHeight);
+        }
     }
 
     let dx = instance.curMargin.left;
 
-    if(instance.textAlign && instance.textAlign == "center" && !instance.inBlockquote) {
+    if(instance.textAlign && instance.textAlign == "center" && !instance.inBlockquote && !instance.isCode) {
         const contentWidth = instance.curX;
         const midCanvas = instance.canvas.width / 2;
         const midContent = contentWidth / 2;
