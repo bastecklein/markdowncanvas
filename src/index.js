@@ -42,7 +42,9 @@ export function markdownToCanvas(markdown, canvas, options) {
         },
         inBlockquote: false,
         isHeading: false,
-        lastY: 0
+        lastY: 0,
+        embeddedImages: options.embeddedImages || {},
+        lastLineHeight: 0
     };
 
     order.curMargin.left = order.curMargin.left * order.scale;
@@ -123,6 +125,11 @@ export function markdownToCanvas(markdown, canvas, options) {
 }
 
 function renderInstruction(instance, instruction) {
+
+    if(instruction.block) {
+        conductNewLine(instance);
+    }
+
     if(instruction.children && instruction.children.length > 0) {
         for(let i = 0; i < instruction.children.length; i++) {
             const child = instruction.children[i];
@@ -156,9 +163,6 @@ function renderInstruction(instance, instruction) {
 
             instance.isHeading = true;
 
-            instance.curX = instance.margin;
-
-            
             instance.curSize = instance.baseSize;
             instance.curWeight = "bold";
 
@@ -184,16 +188,14 @@ function renderInstruction(instance, instruction) {
                 }
             }
 
-            instance.lastY = instance.curY;
-            instance.curY += lineHeight;
+            notifyLineHeight(instance, lineHeight);
 
             return;
         }
 
         if(instruction.type == "heading_close") {
-            instance.lastY = instance.curY;
-            instance.curY += lineHeight;
-            instance.curX = instance.margin;
+            notifyLineHeight(instance, lineHeight);
+
             instance.curSize = instance.baseSize;
             instance.curWeight = "normal";
             instance.isHeading = false;
@@ -202,9 +204,7 @@ function renderInstruction(instance, instruction) {
 
 
         if(instruction.type == "paragraph_close") {
-            instance.lastY = instance.curY;
-            instance.curY += lineHeight * 2;
-            instance.curX = instance.margin;
+            notifyLineHeight(instance, lineHeight * 2);
             return;
         }
 
@@ -222,26 +222,21 @@ function renderInstruction(instance, instruction) {
             context.lineTo(renderWidth, yPos);
             context.stroke();
 
-            instance.lastY = instance.curY;
-            instance.curY = yPos + halfDiff;
-            instance.curX = instance.margin;
+            notifyLineHeight(instance, yDiff);
+
             return;
         }
 
         if(instruction.type == "softbreak") {
             if(instance.useBreaks) {
-                instance.lastY = instance.curY;
-                instance.curY += lineHeight;
-                instance.curX = instance.margin;
+                notifyLineHeight(instance, lineHeight);
             }
             
             return;
         }
 
         if(instruction.type == "hardbreak") {
-            instance.lastY = instance.curY;
-            instance.curY += lineHeight;
-            instance.curX = instance.margin;
+            notifyLineHeight(instance, lineHeight);
             
             return;
         }
@@ -275,13 +270,11 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "list_item_close") {
             instance.curMargin.left = instance.margin;
-            instance.curX = instance.margin;
+            notifyLineHeight(instance, lineHeight);
             return;
         }
 
         if(instruction.type == "blockquote_open") {
-            instance.curX = instance.margin;
-
             instance.inBlockquote = true;
 
             const quotePadding = Math.round(lineHeight / 2);
@@ -292,8 +285,10 @@ function renderInstruction(instance, instruction) {
             context.fillStyle = "rgba(130, 130, 130, 0.25)";
             context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), quotePadding);
 
-            instance.lastY = instance.curY;
-            instance.curY += quotePadding;
+            //instance.lastY = instance.curY;
+            //instance.curY += quotePadding;
+
+            notifyLineHeight(instance, quotePadding);
 
             return;
         }
@@ -309,12 +304,103 @@ function renderInstruction(instance, instruction) {
             context.fillStyle = "rgba(130, 130, 130, 0.25)";
             context.fillRect(instance.curX, instance.curY - (lineHeight * 2), Math.round(canvas.width * 0.015), quotePadding);
 
+            /*
             instance.lastY = instance.curY;
             instance.curY += quotePadding;
-            instance.curX = instance.margin;
+            instance.curX = instance.margin;*/
+
+            notifyLineHeight(instance, quotePadding);
 
             return;
         }
+
+        if(instruction.type == "image") {
+
+            let src = null;
+            let alt = null;
+
+            if(instruction.attrs && instruction.attrs.length > 0) {
+
+                for(let j = 0; j < instruction.attrs.length; j++) {
+                    const attr = instruction.attrs[j];
+
+                    if(attr[0] == "src") {
+                        src = attr[1];
+                    }
+
+                    if(attr[0] == "alt") {
+                        alt = attr[1];
+                    }
+                }
+
+                if(src) {
+                    if(!src.startsWith("http:") && !src.startsWith("https:") && !src.startsWith("data:")) {
+                        if(instance.embeddedImages && instance.embeddedImages[src]) {
+                            src = instance.embeddedImages[src];
+                        } else {
+                            src = null;
+                        }
+                    }
+
+                    if(src) {
+                        const imgOb = internalImageRef[src];
+
+                        if(imgOb) {
+                            const imgWidth = Math.floor(imgOb.width * instance.scale);
+                            const imgHeight = Math.floor(imgOb.height * instance.scale);
+
+                            context.drawImage(imgOb, instance.curX, instance.curY - imgHeight, imgWidth, imgHeight);
+
+                            instance.curX += imgWidth;
+
+                            notifyLineHeight(instance, imgHeight);
+                        } else {
+                            loadImage(src, function() {
+                                markdownToCanvas(instance.curText, instance.canvas, instance);
+                            });
+                        }
+
+                        return;
+                    }
+                }
+
+                /*
+                const imgSrc = instruction.attrs.src;
+
+                if(imgSrc.startsWith("http:") || imgSrc.startsWith("https:") || imgSrc.startsWith("data:")) {
+                    let imgOb = internalImageRef[imgSrc];
+
+                    if(!imgOb) {
+                        imgOb = null;
+
+                        loadImage(imgSrc, function() {
+                            markdownToCanvas(instance.curText, instance.canvas, instance);
+                        });
+                    }
+
+                    if(imgOb) {
+                        const imgWidth = Math.floor(imgOb.width * instance.scale);
+                        const imgHeight = Math.floor(imgOb.height * instance.scale);
+
+                        context.drawImage(imgOb, instance.curX, instance.curY - imgHeight, imgWidth, imgHeight);
+
+                        instance.curX += imgWidth;
+                    }
+                }*/
+            }
+
+            return;
+        }
+    }
+
+    if(instruction.content.startsWith("<!--") && instruction.content.endsWith("-->")) {
+        // This is a comment, skip it
+        return;
+    }
+
+    if(instruction.content.startsWith("[comment]:")) {
+        // This is a comment, skip it
+        return;
     }
 
     context.fillStyle = fillColor;
@@ -341,10 +427,10 @@ function renderInstruction(instance, instruction) {
             const metrics = context.measureText(word);
 
             if(instance.curX + metrics.width > renderWidth) {
-                instance.curX = instance.curMargin.left;
-                instance.lastY = instance.curY;
-                instance.curY += lineHeight;
+                conductNewLine(instance);
             }
+
+            notifyLineHeight(instance, lineHeight);
 
             if(instance.inBlockquote && instance.curX == instance.curMargin.left) {
 
@@ -364,6 +450,19 @@ function renderInstruction(instance, instruction) {
             instance.curX += metrics.width;
         }
     }
+}
+
+function notifyLineHeight(instance, height) {
+    if(height > instance.lastLineHeight) {
+        instance.lastLineHeight = height;
+    }
+}
+
+function conductNewLine(instance) {
+    instance.lastY = instance.curY;
+    instance.curY += instance.lastLineHeight;
+    instance.curX = instance.curMargin.left;
+    instance.lastLineHeight = 0;
 }
 
 export function wrapText(ctx, text, maxWidth) {
