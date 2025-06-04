@@ -157,11 +157,6 @@ function renderInstruction(instance, instruction) {
         }
     }
 
-    console.log("--- START NEW INSTRUCTION ---");
-    console.log(instruction);
-    console.log(JSON.parse(JSON.stringify(instance)));
-    
-
     if(instruction.block) {
         conductNewLine(instance);
     }
@@ -251,7 +246,7 @@ function renderInstruction(instance, instruction) {
             const yPos = Math.floor(instance.lastY);
 
             context.beginPath();
-            context.moveTo(instance.margin, yPos);
+            context.moveTo(0, yPos);
             context.lineTo(renderWidth, yPos);
             context.stroke();
 
@@ -298,10 +293,6 @@ function renderInstruction(instance, instruction) {
             context.textBaseline = "top";
 
             const indentSize = Math.round(20 * instance.scale);
-            //const bulletPos = indentSize * (instruction.level - 1);
-            
-
-            //instance.curMargin.left += instance.scale * 20;
             context.fillText("•", instance.curIndent, instance.curY);
             instance.curX += indentSize;
             instance.curIndent += indentSize;
@@ -309,7 +300,6 @@ function renderInstruction(instance, instruction) {
         }
 
         if(instruction.type == "list_item_close") {
-            //instance.curMargin.left = instance.margin;
             const indentSize = Math.round(20 * instance.scale);
             instance.curIndent -= indentSize;
             return;
@@ -318,7 +308,7 @@ function renderInstruction(instance, instruction) {
         if(instruction.type == "blockquote_open") {
             instance.inBlockquote = true;
 
-            instance.lastLineHeight = Math.round(8 * instance.scale);
+            instance.lastLineHeight = Math.round(12 * instance.scale);
             conductNewLine(instance);
 
             return;
@@ -326,6 +316,10 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "blockquote_close") {
             instance.inBlockquote = false;
+
+            instance.lastLineHeight = Math.round(8 * instance.scale);
+            conductNewLine(instance);
+
             return;
         }
 
@@ -425,8 +419,6 @@ function notifyLineHeight(instance, height) {
 }
 
 function conductNewLine(instance) {
-    
-    console.log("Conducting new line");
     
     if(instance.lastLineHeight > 0) {
         if(instance.inBlockquote) {
