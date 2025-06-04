@@ -13,6 +13,8 @@ export function markdownToCanvas(markdown, canvas, options) {
     const renderCanvas = document.createElement("canvas");
     const renderContext = renderCanvas.getContext("2d");
 
+    renderContext.textBaseline = "top";
+
     renderCanvas.height = canvas.height;
     renderCanvas.width = canvas.width;
 
@@ -131,12 +133,17 @@ function renderInstruction(instance, instruction) {
     }
 
     if(instruction.children && instruction.children.length > 0) {
-        for(let i = 0; i < instruction.children.length; i++) {
-            const child = instruction.children[i];
-            renderInstruction(instance, child);
-        }
 
-        return;
+        if(instruction.type == "image" && instruction.attrs && instruction.attrs.length > 0 && instruction.children.length == 1) {
+            // we should ignore the children of an image instruction
+        } else {
+            for(let i = 0; i < instruction.children.length; i++) {
+                const child = instruction.children[i];
+                renderInstruction(instance, child);
+            }
+
+            return;
+        }
     }
 
     const lineHeight = (instance.curSize + 2) * instance.scale;
@@ -210,7 +217,7 @@ function renderInstruction(instance, instruction) {
             const yDiff = instance.curY - instance.lastY;
             const halfDiff = Math.floor(yDiff / 2);
 
-            let yPos = Math.floor(instance.lastY + halfDiff);
+            let yPos = Math.floor(instance.lastY - halfDiff);
 
             context.beginPath();
             context.moveTo(instance.margin, yPos);
@@ -270,11 +277,12 @@ function renderInstruction(instance, instruction) {
 
             const quotePadding = Math.round(lineHeight / 2);
 
+            /*
             context.fillStyle = "rgba(130, 130, 130, 0.15)";
             context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
 
             context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), quotePadding);
+            context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), quotePadding);*/
 
             //instance.lastY = instance.curY;
             //instance.curY += quotePadding;
@@ -285,15 +293,18 @@ function renderInstruction(instance, instruction) {
         }
 
         if(instruction.type == "blockquote_close") {
-            instance.inBlockquote = false;
+            
 
+            const quotePadding = Math.round(lineHeight * 0.75);
+
+            /*
             const quotePadding = Math.round(lineHeight * 0.75);
 
             context.fillStyle = "rgba(130, 130, 130, 0.15)";
             context.fillRect(instance.curX, instance.lastY, canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
 
             context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            context.fillRect(instance.curX, instance.lastY, Math.round(canvas.width * 0.015), quotePadding);
+            context.fillRect(instance.curX, instance.lastY, Math.round(canvas.width * 0.015), quotePadding);*/
 
             /*
             instance.lastY = instance.curY;
@@ -301,6 +312,10 @@ function renderInstruction(instance, instruction) {
             instance.curX = instance.margin;*/
 
             notifyLineHeight(instance, quotePadding);
+
+            conductNewLine(instance);
+
+            instance.inBlockquote = false;
 
             return;
         }
@@ -355,29 +370,6 @@ function renderInstruction(instance, instruction) {
                     }
                 }
 
-                /*
-                const imgSrc = instruction.attrs.src;
-
-                if(imgSrc.startsWith("http:") || imgSrc.startsWith("https:") || imgSrc.startsWith("data:")) {
-                    let imgOb = internalImageRef[imgSrc];
-
-                    if(!imgOb) {
-                        imgOb = null;
-
-                        loadImage(imgSrc, function() {
-                            markdownToCanvas(instance.curText, instance.canvas, instance);
-                        });
-                    }
-
-                    if(imgOb) {
-                        const imgWidth = Math.floor(imgOb.width * instance.scale);
-                        const imgHeight = Math.floor(imgOb.height * instance.scale);
-
-                        context.drawImage(imgOb, instance.curX, instance.curY - imgHeight, imgWidth, imgHeight);
-
-                        instance.curX += imgWidth;
-                    }
-                }*/
             }
 
             return;
@@ -425,12 +417,15 @@ function renderInstruction(instance, instruction) {
 
             if(instance.inBlockquote && instance.curX == instance.curMargin.left) {
 
+                /*
                 context.fillStyle = "rgba(130, 130, 130, 0.15)";
                 context.fillRect(instance.curX, instance.curY - lineHeight, canvas.width - (instance.curMargin.left + instance.curMargin.right), lineHeight);
 
                 context.fillStyle = "rgba(130, 130, 130, 0.25)";
                 context.fillRect(instance.curX, instance.curY - lineHeight, Math.round(canvas.width * 0.015), lineHeight);
-                
+                */
+
+
                 instance.curX += Math.round(canvas.width * 0.045);
             }
 
@@ -453,7 +448,22 @@ function conductNewLine(instance) {
     instance.lastY = instance.curY;
     instance.curY += instance.lastLineHeight;
     instance.curX = instance.curMargin.left;
+    
+    if(instance.lastLineHeight > 0) {
+        if(instance.inBlockquote) {
+            instance.context.globalCompositeOperation = "destination-over";
+
+            instance.context.fillStyle = "rgba(130, 130, 130, 0.15)";
+            instance.context.fillRect(instance.curX, instance.lastY, instance.canvas.width - (instance.curMargin.left + instance.curMargin.right), instance.lastLineHeight);
+
+            instance.context.fillStyle = "rgba(130, 130, 130, 0.25)";
+            instance.context.fillRect(instance.curX, instance.lastY, Math.round(instance.canvas.width * 0.015), instance.lastLineHeight);
+        }
+    }
+    
     instance.lastLineHeight = 0;
+
+    
 }
 
 export function wrapText(ctx, text, maxWidth) {
