@@ -69,8 +69,8 @@ export function markdownToCanvas(markdown, canvas, options) {
     order.margin = order.margin * order.scale;
     order.maxImageHeight = order.maxImageHeight * order.scale;
 
-    order.curY = (order.curSize * order.scale) + order.margin;
-    order.curX = order.margin;
+    order.curY = 0;
+    order.curX = 0;
 
     const instructions = mit.parse(markdown, {});
 
@@ -127,7 +127,7 @@ export function markdownToCanvas(markdown, canvas, options) {
         }    
     }
 
-    let dy = 0;
+    let dy = order.margin;
 
     if(options.verticalAlign == "center") {
         dy = ((canvas.height - order.curY) / 2) - (order.margin / 2);
@@ -391,7 +391,7 @@ function renderInstruction(instance, instruction) {
             }
             
 
-            if(instance.inBlockquote && instance.curX == instance.curMargin.left) {
+            if(instance.inBlockquote && instance.curX == 0) {
                 instance.curX += Math.round(canvas.width * 0.045);
             }
 
@@ -419,17 +419,17 @@ function conductNewLine(instance) {
     if(instance.lastLineHeight > 0) {
         if(instance.inBlockquote) {
             instance.context.fillStyle = "rgba(130, 130, 130, 0.15)";
-            instance.context.fillRect(instance.curMargin.left, instance.lastY, instance.canvas.width - (instance.curMargin.left + instance.curMargin.right), instance.lastLineHeight);
+            instance.context.fillRect(instance.curMargin.left, instance.curY, instance.canvas.width - (instance.curMargin.left + instance.curMargin.right), instance.lastLineHeight);
 
             instance.context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            instance.context.fillRect(instance.curMargin.left, instance.lastY, Math.round(instance.canvas.width * 0.015), instance.lastLineHeight);
+            instance.context.fillRect(instance.curMargin.left, instance.curY, Math.round(instance.canvas.width * 0.015), instance.lastLineHeight);
         }
     }
 
-    let dx = 0;
+    let dx = instance.curMargin.left;
 
     if(instance.textAlign && instance.textAlign == "center") {
-        const contentWidth = instance.curX - instance.margin;
+        const contentWidth = instance.curX;
         const midCanvas = instance.canvas.width / 2;
         const midContent = contentWidth / 2;
         dx = Math.floor(midCanvas - midContent);
@@ -440,7 +440,7 @@ function conductNewLine(instance) {
     
     instance.lastY = instance.curY;
     instance.curY += instance.lastLineHeight;
-    instance.curX = instance.curMargin.left;
+    instance.curX = 0;
     instance.lastLineHeight = 0; 
 }
 
