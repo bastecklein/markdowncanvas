@@ -188,14 +188,10 @@ function renderInstruction(instance, instruction) {
                 }
             }
 
-            notifyLineHeight(instance, lineHeight);
-
             return;
         }
 
         if(instruction.type == "heading_close") {
-            notifyLineHeight(instance, lineHeight);
-
             instance.curSize = instance.baseSize;
             instance.curWeight = "normal";
             instance.isHeading = false;
@@ -204,7 +200,6 @@ function renderInstruction(instance, instruction) {
 
 
         if(instruction.type == "paragraph_close") {
-            notifyLineHeight(instance, lineHeight * 2);
             return;
         }
 
@@ -221,9 +216,6 @@ function renderInstruction(instance, instruction) {
             context.moveTo(instance.margin, yPos);
             context.lineTo(renderWidth, yPos);
             context.stroke();
-
-            notifyLineHeight(instance, yDiff);
-
             return;
         }
 
@@ -270,7 +262,6 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "list_item_close") {
             instance.curMargin.left = instance.margin;
-            notifyLineHeight(instance, lineHeight);
             return;
         }
 
@@ -299,10 +290,10 @@ function renderInstruction(instance, instruction) {
             const quotePadding = Math.round(lineHeight * 0.75);
 
             context.fillStyle = "rgba(130, 130, 130, 0.15)";
-            context.fillRect(instance.curX, instance.curY - (lineHeight * 2), canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
+            context.fillRect(instance.curX, instance.lastY, canvas.width - (instance.curMargin.left + instance.curMargin.right), quotePadding);
 
             context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            context.fillRect(instance.curX, instance.curY - (lineHeight * 2), Math.round(canvas.width * 0.015), quotePadding);
+            context.fillRect(instance.curX, instance.lastY, Math.round(canvas.width * 0.015), quotePadding);
 
             /*
             instance.lastY = instance.curY;
