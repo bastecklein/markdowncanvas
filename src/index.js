@@ -293,15 +293,16 @@ function renderInstruction(instance, instruction) {
             context.textBaseline = "top";
 
             const indentSize = Math.round(20 * instance.scale);
-            context.fillText("•", instance.curIndent, instance.curY);
-            instance.curX += indentSize;
             instance.curIndent = (indentSize - 1) * instruction.level;
+
+            context.fillText("•", instance.curIndent, instance.curY);
+            instance.curX = instance.curIndent + indentSize;
+            
             return;
         }
 
         if(instruction.type == "list_item_close") {
-            const indentSize = Math.round(20 * instance.scale);
-            instance.curIndent -= indentSize;
+            instance.curIndent = 0;
             return;
         }
 
