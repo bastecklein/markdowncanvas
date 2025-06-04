@@ -56,7 +56,8 @@ export function markdownToCanvas(markdown, canvas, options) {
         isHeading: false,
         lastY: 0,
         embeddedImages: options.embeddedImages || {},
-        lastLineHeight: 0
+        lastLineHeight: 0,
+        textAlign: options.textAlign || "left"
     };
 
     order.curMargin.left = order.curMargin.left * order.scale;
@@ -301,23 +302,23 @@ function renderInstruction(instance, instruction) {
         if(instruction.type == "blockquote_open") {
             instance.inBlockquote = true;
 
-            const quotePadding = Math.round(lineHeight / 2);
+            //const quotePadding = Math.round(lineHeight / 2);
             
 
-            notifyLineHeight(instance, quotePadding);
+            //notifyLineHeight(instance, quotePadding);
 
-            conductNewLine(instance);
+            //conductNewLine(instance);
 
             return;
         }
 
         if(instruction.type == "blockquote_close") {
 
-            const quotePadding = Math.round(lineHeight * 0.75);
+            //const quotePadding = Math.round(lineHeight * 0.75);
 
-            notifyLineHeight(instance, quotePadding);
+            //notifyLineHeight(instance, quotePadding);
 
-            conductNewLine(instance);
+            //conductNewLine(instance);
 
             instance.inBlockquote = false;
 
@@ -327,7 +328,6 @@ function renderInstruction(instance, instruction) {
         if(instruction.type == "image") {
 
             let src = null;
-            let alt = null;
 
             if(instruction.attrs && instruction.attrs.length > 0) {
 
@@ -337,43 +337,10 @@ function renderInstruction(instance, instruction) {
                     if(attr[0] == "src") {
                         src = attr[1];
                     }
-
-                    if(attr[0] == "alt") {
-                        alt = attr[1];
-                    }
                 }
 
                 if(src) {
                     renderInlineImage(instance, src, context);
-                    /*
-                    if(!src.startsWith("http:") && !src.startsWith("https:") && !src.startsWith("data:")) {
-                        if(instance.embeddedImages && instance.embeddedImages[src]) {
-                            src = instance.embeddedImages[src];
-                        } else {
-                            src = null;
-                        }
-                    }
-
-                    if(src) {
-                        const imgOb = internalImageRef[src];
-
-                        if(imgOb) {
-                            const imgWidth = Math.floor(imgOb.width * instance.scale);
-                            const imgHeight = Math.floor(imgOb.height * instance.scale);
-
-                            context.drawImage(imgOb, instance.curX, instance.curY, imgWidth, imgHeight);
-
-                            instance.curX += imgWidth;
-
-                            notifyLineHeight(instance, imgHeight);
-                        } else {
-                            loadImage(src, function() {
-                                markdownToCanvas(instance.curText, instance.canvas, instance);
-                            });
-                        }
-
-                        return;
-                    }*/
                 }
 
             }
@@ -392,7 +359,7 @@ function renderInstruction(instance, instruction) {
         return;
     }
 
-    if(instruction.content.startsWith("[!") && instruction.content.endsWith("]")) {
+    if(instruction.content.startsWith("![") && instruction.content.endsWith("]")) {
         // inline image without alt text
         const src = instruction.content.substring(2, instruction.content.length - 1).trim();
         renderInlineImage(instance, src, context);
