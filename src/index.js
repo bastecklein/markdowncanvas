@@ -157,7 +157,7 @@ function renderInstruction(instance, instruction) {
         }
     }
 
-    if(instruction.block && instruction.type != "list_item_open") {
+    if(instruction.block && instruction.type != "list_item_open" && instruction.type != "paragraph_open") {
         conductNewLine(instance);
     }
 
