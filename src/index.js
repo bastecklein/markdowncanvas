@@ -390,10 +390,10 @@ function renderInstruction(instance, instruction) {
 
     if(instruction.content && instruction.content.trim().length > 0) {
 
-        const lines = instruction.content.split("\n");
+        const allLines = instruction.content.split("\n");
 
-        for(let j = 0; j < lines.length; j++) {
-            const line = lines[j];
+        for(let j = 0; j < allLines.length; j++) {
+            const line = allLines[j];
 
             const words = line.split(" ");
 
@@ -427,9 +427,11 @@ function renderInstruction(instance, instruction) {
 
                 instance.curX += metrics.width;
 
-                if(fenceBlock) {
-                    conductNewLine(instance);
-                }
+                
+            }
+
+            if(fenceBlock) {
+                conductNewLine(instance);
             }
         }
 
