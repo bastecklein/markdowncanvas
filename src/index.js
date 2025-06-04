@@ -1,6 +1,10 @@
 import markdownit from "markdown-it";
 
 let mit = new markdownit();
+mit.validateLink = function() {
+    // Disable link validation to allow any URL
+    return true;
+};
 
 let internalImageRef = {};
 
