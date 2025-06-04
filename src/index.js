@@ -57,7 +57,8 @@ export function markdownToCanvas(markdown, canvas, options) {
         lastY: 0,
         embeddedImages: options.embeddedImages || {},
         lastLineHeight: 0,
-        textAlign: options.textAlign || "left"
+        textAlign: options.textAlign || "left",
+        maxImageHeight: options.maxImageHeight || 512
     };
 
     order.curMargin.left = order.curMargin.left * order.scale;
@@ -66,6 +67,8 @@ export function markdownToCanvas(markdown, canvas, options) {
     order.curMargin.bottom = order.curMargin.bottom * order.scale;
 
     order.margin = order.margin * order.scale;
+    order.maxImageHeight = order.maxImageHeight * order.scale;
+
     order.curY = (order.curSize * order.scale) + order.margin;
     order.curX = order.margin;
 
@@ -139,10 +142,6 @@ export function markdownToCanvas(markdown, canvas, options) {
 
 function renderInstruction(instance, instruction) {
 
-    if(instruction.block) {
-        conductNewLine(instance);
-    }
-
     if(instruction.children && instruction.children.length > 0) {
 
         if(instruction.type == "image" && instruction.attrs && instruction.attrs.length > 0 && instruction.children.length == 1) {
@@ -155,6 +154,10 @@ function renderInstruction(instance, instruction) {
 
             return;
         }
+    }
+
+    if(instruction.block) {
+        conductNewLine(instance);
     }
 
     const lineHeight = (instance.curSize + 2) * instance.scale;
@@ -301,27 +304,11 @@ function renderInstruction(instance, instruction) {
 
         if(instruction.type == "blockquote_open") {
             instance.inBlockquote = true;
-
-            //const quotePadding = Math.round(lineHeight / 2);
-            
-
-            //notifyLineHeight(instance, quotePadding);
-
-            //conductNewLine(instance);
-
             return;
         }
 
         if(instruction.type == "blockquote_close") {
-
-            //const quotePadding = Math.round(lineHeight * 0.75);
-
-            //notifyLineHeight(instance, quotePadding);
-
-            //conductNewLine(instance);
-
             instance.inBlockquote = false;
-
             return;
         }
 
@@ -394,7 +381,10 @@ function renderInstruction(instance, instruction) {
                 conductNewLine(instance);
             }
 
-            notifyLineHeight(instance, lineHeight);
+            if(word && word.trim().length > 0) {
+                notifyLineHeight(instance, lineHeight);
+            }
+            
 
             if(instance.inBlockquote && instance.curX == instance.curMargin.left) {
                 instance.curX += Math.round(canvas.width * 0.045);
@@ -433,8 +423,10 @@ function conductNewLine(instance) {
     let dx = 0;
 
     if(instance.textAlign && instance.textAlign == "center") {
-        const contentWidth = instance.curX - instance.curMargin.left - instance.curMargin.right;
-        dx = Math.floor((instance.canvas.width - contentWidth) / 2);
+        const contentWidth = instance.curX - instance.margin;
+        const midCanvas = instance.canvas.width / 2;
+        const midContent = contentWidth / 2;
+        dx = Math.floor(midCanvas - midContent);
     }
 
     instance.context.drawImage(instance.lineCanvas, dx, 0);
@@ -496,8 +488,14 @@ function renderInlineImage(instance, src, context) {
         const imgOb = internalImageRef[src];
 
         if(imgOb) {
-            const imgWidth = Math.floor(imgOb.width * instance.scale);
-            const imgHeight = Math.floor(imgOb.height * instance.scale);
+            let imgWidth = Math.floor(imgOb.width * instance.scale);
+            let imgHeight = Math.floor(imgOb.height * instance.scale);
+
+            if(imgHeight > instance.maxImageHeight) {
+                const ratio = imgWidth / imgHeight;
+                imgHeight = instance.maxImageHeight;
+                imgWidth = Math.floor(imgHeight * ratio);
+            }
 
             context.drawImage(imgOb, instance.curX, instance.curY, imgWidth, imgHeight);
 
