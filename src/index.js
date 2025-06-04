@@ -76,8 +76,6 @@ export function markdownToCanvas(markdown, canvas, options) {
 
     const instructions = mit.parse(markdown, {});
 
-    console.log(instructions);
-    console.log(order);
 
     for(let i = 0; i < instructions.length; i++) {
         const inst = instructions[i];
