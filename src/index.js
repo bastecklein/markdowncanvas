@@ -295,7 +295,7 @@ function renderInstruction(instance, instruction) {
             const indentSize = Math.round(20 * instance.scale);
             context.fillText("•", instance.curIndent, instance.curY);
             instance.curX += indentSize;
-            instance.curIndent += indentSize;
+            instance.curIndent = (indentSize - 1) * instruction.level;
             return;
         }
 
@@ -317,7 +317,7 @@ function renderInstruction(instance, instruction) {
         if(instruction.type == "blockquote_close") {
             instance.inBlockquote = false;
 
-            instance.lastLineHeight = Math.round(8 * instance.scale);
+            instance.lastLineHeight = Math.round(12 * instance.scale);
             conductNewLine(instance);
 
             return;
@@ -432,7 +432,7 @@ function conductNewLine(instance) {
 
     let dx = instance.curMargin.left;
 
-    if(instance.textAlign && instance.textAlign == "center") {
+    if(instance.textAlign && instance.textAlign == "center" && !instance.inBlockquote) {
         const contentWidth = instance.curX;
         const midCanvas = instance.canvas.width / 2;
         const midContent = contentWidth / 2;
