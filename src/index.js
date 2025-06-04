@@ -207,6 +207,7 @@ function renderInstruction(instance, instruction) {
 
 
         if(instruction.type == "paragraph_close") {
+            notifyLineHeight(instance, instance.lastLineHeight + Math.round(8 * instance.scale));
             return;
         }
 
@@ -214,10 +215,11 @@ function renderInstruction(instance, instruction) {
 
             context.lineWidth = instance.scale;
 
+            /*
             const yDiff = instance.curY - instance.lastY;
-            const halfDiff = Math.floor(yDiff / 2);
+            const halfDiff = Math.floor(yDiff / 2);*/
 
-            let yPos = Math.floor(instance.lastY - halfDiff);
+            let yPos = Math.floor(instance.lastY);
 
             context.beginPath();
             context.moveTo(instance.margin, yPos);
@@ -261,6 +263,9 @@ function renderInstruction(instance, instruction) {
         }
 
         if(instruction.type == "list_item_open") {
+
+            context.textBaseline = "top";
+
             instance.curMargin.left += instance.scale * 20;
             context.fillText("•", instance.curX, instance.curY);
             instance.curX += instance.scale * 20;
@@ -355,7 +360,7 @@ function renderInstruction(instance, instruction) {
                             const imgWidth = Math.floor(imgOb.width * instance.scale);
                             const imgHeight = Math.floor(imgOb.height * instance.scale);
 
-                            context.drawImage(imgOb, instance.curX, instance.curY - imgHeight, imgWidth, imgHeight);
+                            context.drawImage(imgOb, instance.curX, instance.curY, imgWidth, imgHeight);
 
                             instance.curX += imgWidth;
 
@@ -431,6 +436,8 @@ function renderInstruction(instance, instruction) {
 
             context.fillStyle = fillColor;
 
+            context.textBaseline = "top";
+
             context.fillText(word, instance.curX, instance.curY);
 
             instance.curX += metrics.width;
@@ -445,22 +452,23 @@ function notifyLineHeight(instance, height) {
 }
 
 function conductNewLine(instance) {
-    instance.lastY = instance.curY;
-    instance.curY += instance.lastLineHeight;
-    instance.curX = instance.curMargin.left;
+    
     
     if(instance.lastLineHeight > 0) {
         if(instance.inBlockquote) {
             instance.context.globalCompositeOperation = "destination-over";
 
             instance.context.fillStyle = "rgba(130, 130, 130, 0.15)";
-            instance.context.fillRect(instance.curX, instance.lastY, instance.canvas.width - (instance.curMargin.left + instance.curMargin.right), instance.lastLineHeight);
+            instance.context.fillRect(instance.curMargin.left, instance.lastY, instance.canvas.width - (instance.curMargin.left + instance.curMargin.right), instance.lastLineHeight);
 
             instance.context.fillStyle = "rgba(130, 130, 130, 0.25)";
-            instance.context.fillRect(instance.curX, instance.lastY, Math.round(instance.canvas.width * 0.015), instance.lastLineHeight);
+            instance.context.fillRect(instance.curMargin.left, instance.lastY, Math.round(instance.canvas.width * 0.015), instance.lastLineHeight);
         }
     }
     
+    instance.lastY = instance.curY;
+    instance.curY += instance.lastLineHeight;
+    instance.curX = instance.curMargin.left;
     instance.lastLineHeight = 0;
 
     
