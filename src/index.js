@@ -58,7 +58,8 @@ export function markdownToCanvas(markdown, canvas, options) {
         embeddedImages: options.embeddedImages || {},
         lastLineHeight: 0,
         textAlign: options.textAlign || "left",
-        maxImageHeight: options.maxImageHeight || 512
+        maxImageHeight: options.maxImageHeight || 512,
+        curIndent: 0
     };
 
     order.curMargin.left = order.curMargin.left * order.scale;
@@ -296,19 +297,30 @@ function renderInstruction(instance, instruction) {
 
             context.textBaseline = "top";
 
-            instance.curMargin.left += instance.scale * 20;
-            context.fillText("•", instance.curX, instance.curY);
-            instance.curX += instance.scale * 20;
+            const indentSize = Math.round(20 * instance.scale);
+            //const bulletPos = indentSize * (instruction.level - 1);
+            
+
+            //instance.curMargin.left += instance.scale * 20;
+            context.fillText("•", instance.curIndent, instance.curY);
+            instance.curX += indentSize;
+            instance.curIndent += indentSize;
             return;
         }
 
         if(instruction.type == "list_item_close") {
-            instance.curMargin.left = instance.margin;
+            //instance.curMargin.left = instance.margin;
+            const indentSize = Math.round(20 * instance.scale);
+            instance.curIndent -= indentSize;
             return;
         }
 
         if(instruction.type == "blockquote_open") {
             instance.inBlockquote = true;
+
+            instance.lastLineHeight = Math.round(8 * instance.scale);
+            conductNewLine(instance);
+
             return;
         }
 
@@ -440,7 +452,7 @@ function conductNewLine(instance) {
     
     instance.lastY = instance.curY;
     instance.curY += instance.lastLineHeight;
-    instance.curX = 0;
+    instance.curX = instance.curIndent;
     instance.lastLineHeight = 0; 
 }
 
