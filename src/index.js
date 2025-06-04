@@ -18,6 +18,14 @@ export function markdownToCanvas(markdown, canvas, options) {
     renderCanvas.height = canvas.height;
     renderCanvas.width = canvas.width;
 
+    const lineCanvas = document.createElement("canvas");
+    const lineContext = lineCanvas.getContext("2d");
+
+    lineContext.textBaseline = "top";
+
+    lineCanvas.height = canvas.height;
+    lineCanvas.width = canvas.width;
+
     const order = {
         useBreaks: options.useBreaks || true,
         baseSize: options.baseSize || 14,
@@ -31,6 +39,8 @@ export function markdownToCanvas(markdown, canvas, options) {
         scale: options.scale || 1,
         context: renderContext,
         canvas: renderCanvas,
+        lineContext: lineContext,
+        lineCanvas: lineCanvas,
         margin: options.margin || 0,
         backgroundColor: options.backgroundColor || null,
         textColor: options.textColor || null,
@@ -148,8 +158,8 @@ function renderInstruction(instance, instruction) {
 
     const lineHeight = (instance.curSize + 2) * instance.scale;
 
-    const canvas = instance.canvas;
-    const context = instance.context;
+    const canvas = instance.lineCanvas;
+    const context = instance.lineContext;
 
     const renderWidth = Math.floor(canvas.width - (instance.curMargin.left + instance.curMargin.right));
 
@@ -334,6 +344,8 @@ function renderInstruction(instance, instruction) {
                 }
 
                 if(src) {
+                    renderInlineImage(instance, src, context);
+                    /*
                     if(!src.startsWith("http:") && !src.startsWith("https:") && !src.startsWith("data:")) {
                         if(instance.embeddedImages && instance.embeddedImages[src]) {
                             src = instance.embeddedImages[src];
@@ -361,7 +373,7 @@ function renderInstruction(instance, instruction) {
                         }
 
                         return;
-                    }
+                    }*/
                 }
 
             }
@@ -379,6 +391,14 @@ function renderInstruction(instance, instruction) {
         // This is a comment, skip it
         return;
     }
+
+    if(instruction.content.startsWith("[!") && instruction.content.endsWith("]")) {
+        // inline image without alt text
+        const src = instruction.content.substring(2, instruction.content.length - 1).trim();
+        renderInlineImage(instance, src, context);
+        return;
+    }
+
 
     context.fillStyle = fillColor;
 
@@ -435,8 +455,6 @@ function conductNewLine(instance) {
     
     if(instance.lastLineHeight > 0) {
         if(instance.inBlockquote) {
-            instance.context.globalCompositeOperation = "destination-over";
-
             instance.context.fillStyle = "rgba(130, 130, 130, 0.15)";
             instance.context.fillRect(instance.curMargin.left, instance.lastY, instance.canvas.width - (instance.curMargin.left + instance.curMargin.right), instance.lastLineHeight);
 
@@ -444,6 +462,16 @@ function conductNewLine(instance) {
             instance.context.fillRect(instance.curMargin.left, instance.lastY, Math.round(instance.canvas.width * 0.015), instance.lastLineHeight);
         }
     }
+
+    let dx = 0;
+
+    if(instance.textAlign && instance.textAlign == "center") {
+        const contentWidth = instance.curX - instance.curMargin.left - instance.curMargin.right;
+        dx = Math.floor((instance.canvas.width - contentWidth) / 2);
+    }
+
+    instance.context.drawImage(instance.lineCanvas, dx, 0);
+    instance.lineContext.clearRect(0, 0, instance.lineCanvas.width, instance.lineCanvas.height);
     
     instance.lastY = instance.curY;
     instance.curY += instance.lastLineHeight;
@@ -486,4 +514,35 @@ function loadImage(url, callback) {
         }
     };
     imgOb.src = url;
+}
+
+function renderInlineImage(instance, src, context) {
+    if(!src.startsWith("http:") && !src.startsWith("https:") && !src.startsWith("data:")) {
+        if(instance.embeddedImages && instance.embeddedImages[src]) {
+            src = instance.embeddedImages[src];
+        } else {
+            src = null;
+        }
+    }
+
+    if(src) {
+        const imgOb = internalImageRef[src];
+
+        if(imgOb) {
+            const imgWidth = Math.floor(imgOb.width * instance.scale);
+            const imgHeight = Math.floor(imgOb.height * instance.scale);
+
+            context.drawImage(imgOb, instance.curX, instance.curY, imgWidth, imgHeight);
+
+            instance.curX += imgWidth;
+
+            notifyLineHeight(instance, imgHeight);
+        } else {
+            loadImage(src, function() {
+                markdownToCanvas(instance.curText, instance.canvas, instance);
+            });
+        }
+
+        return;
+    }
 }
